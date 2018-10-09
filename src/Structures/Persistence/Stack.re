@@ -1,6 +1,3 @@
-/**
- * Based on chapter 2 "Persistence"
-*/
 module type Stack = {
   type stack('a);
 
@@ -9,9 +6,12 @@ module type Stack = {
   let cons: ('a, stack('a)) => stack('a);
   let head: stack('a) => 'a;
   let tail: stack('a) => stack('a);
+  let concat: (stack('a), stack('a)) => stack('a);
+  let update: (stack('a), int, 'a) => stack('a);
 };
 
 exception EmptyList;
+exception Subscript;
 
 module List: Stack = {
   type stack('a) = list('a);
@@ -26,10 +26,27 @@ module List: Stack = {
     fun
     | [x, ..._] => x
     | [] => raise(EmptyList);
+
   let tail =
     fun
     | [_, ...q] => q
     | [] => raise(EmptyList);
+
+  let rec concat = (xs, ys) =>
+    switch (xs) {
+    | [] => ys
+    | [x, ...xs] => [x, ...concat(xs, ys)]
+    };
+
+  let rec update = (ls, idx, value) =>
+    switch (ls) {
+    | [] => raise(Subscript)
+    | [x, ...xs] =>
+      switch (idx) {
+      | 0 => [value, ...xs]
+      | _ => [x, ...update(xs, idx - 1, value)]
+      }
+    };
 };
 
 module CustomStack: Stack = {
@@ -54,4 +71,21 @@ module CustomStack: Stack = {
     fun
     | Nil => raise(EmptyList)
     | Cons(_, s) => s;
+
+  let rec concat = (xs, ys) =>
+    if (isEmpty(xs)) {
+      ys;
+    } else {
+      cons(head(xs), concat(tail(xs), ys));
+    };
+
+  let rec update = (ls, idx, value) =>
+    if (isEmpty(ls)) {
+      raise(Subscript);
+    } else {
+      switch (idx) {
+      | 0 => cons(value, tail(ls))
+      | _ => cons(head(ls), update(tail(ls), idx - 1, value))
+      };
+    };
 };
